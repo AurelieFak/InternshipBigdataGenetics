@@ -1,0 +1,9 @@
+<root>
+    <item name='java.lang.Integer'>
+        <annotation name='java.lang.annotation.Deprecated'/>
+    </item>
+    <item name='java.lang.Override'>
+      <annotation name='java.lang.annotation.Deprecated'/>
+      <annotation name='org.jetbrains.annotations.NotNull'/>
+    </item>
+</root>
