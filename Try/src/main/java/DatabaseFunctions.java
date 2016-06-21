@@ -12,10 +12,11 @@ import java.util.LinkedList;
  */
 
 // TODO table names lowercase/uppercase Consistency
+// TODO the names of the tables can come from the number of the chromosome
 
 public class DatabaseFunctions {
-    // TODO maybe change the name
-    // TODO Keyspace
+
+    // TODO NEED TO CHECK IF THE IDU IS THE SAME
 
     public LinkedList<String> hasToBeFloatTable=new LinkedList<String>();
     public LinkedList<String> hasToBeIntTable=new LinkedList<String>();
@@ -23,23 +24,57 @@ public class DatabaseFunctions {
 
     public void insertIntoHastoBeAfLoat () {
 
+        // others fields can be added
+
         hasToBeFloatTable.add("af"); // Allele frequency
-       // hasToBeFloatTable.add("ac");
+        hasToBeFloatTable.add("ac");
         hasToBeFloatTable.add("amr_af");
         hasToBeFloatTable.add("afr_af");
         hasToBeFloatTable.add("eur_af");
         hasToBeFloatTable.add("sas_af");
-
-
-        hasToBeFloatTable.add("rs");
+        hasToBeFloatTable.add("eas_af");
 
     }
-    // TODO INTEGER
+
+
     public void insertIntoHasToBeInt() {
+         // todo to call lors de la creation et de l'insertion
+        // others fields can be added
 
         hasToBeIntTable.add("pos");
+        hasToBeIntTable.add("an");
+        hasToBeIntTable.add("dp");
+        hasToBeIntTable.add("ns");
 
     }
+
+    public void insertIntoDataFields(LinkedList<String> data) {
+
+        data.add("chrom");
+        data.add("pos"); // is an int
+        data.add("id");
+        data.add("ref");
+        data.add("qual");
+        data.add("filter");
+        data.add("alt");
+        data.add("info");
+
+        //System.out.println(data);
+
+    }
+
+    // function to create a keySpace
+
+    public String createKeySpace (String keySpaceName)
+    {
+        String cqlStatement = "CREATE KEYSPACE IF NOT EXISTS " +
+                keySpaceName+
+                "WITH " +
+                "replication = {'class':'SimpleStrategy','replication_factor':1}";
+        return cqlStatement;
+    }
+
+    // function to create a table
 
     public String creationTable (String tableName){
 
@@ -47,37 +82,20 @@ public class DatabaseFunctions {
         cqlStt+= tableName;
 
         return cqlStt;
-        // OU session.execute(cqlStt);
 
     }
 
-    public void insertionInTable (String tableName, LinkedList<String> fields, LinkedList<String> values) {
+    public String createTableData(String keySpaceName, String tableName) {
 
-        String cqlStt=" INSERT INTO";
-        cqlStt+= tableName;
-        cqlStt += "VALUES ";
-        // TODO KEEP GOING
-    }
-
-    public void clearTable (String tableName) {
-
-    }
-
-    public String createKeySpace ()
-    {
-        String cqlStatement = "CREATE KEYSPACE IF NOT EXISTS Gene WITH " +
-                "replication = {'class':'SimpleStrategy','replication_factor':1}";
-        return cqlStatement;
-    }
-
-    // TODO the names of the tables can come from the numer of the chromosome
-
-    public String createTableDataD() {
-
-        String cqlStatement2 = "CREATE TABLE IF NOT EXISTS Gene.dataC (" +
+        String cqlStatement2 = "CREATE TABLE IF NOT EXISTS "+
+                keySpaceName+
+                "."+
+                tableName +
+                " (" +
+                "idu int PRIMARY KEY," +
                 " chrom varchar," +
                 " pos int, " + // the cassandra table knows that pos is an int but not the datastructure
-                " id varchar PRIMARY KEY, " + // does it have to be first in the creation of the table ?
+                " id varchar, " + // does it have to be first in the creation of the table ?
                 " ref varchar, " +
                 " qual varchar, " +
                 " filter varchar, " +
@@ -88,66 +106,39 @@ public class DatabaseFunctions {
         return cqlStatement2;
     }
 
-    // TODO les fonctions peuvent etre plus generiques
-    String tableName;
-
-public String InsertIntoDataC (String []str)
-{
-    int last = str.length;
-    String cqlStatement3 = "INSERT INTO Gene.dataC(chrom,pos,id,ref,qual,filter,alt,info) VALUES ('";
-    for (int i = 0; i < str.length-1; i++) // 0 1 2 3 4 5 6  length = 8
+    public String createTableInfo (String tableName,ArrayList<String> tabInfo,String keySpaceName )
+    // TODO no NULL
+            // soit je remove les collones je triche
+            // if value == null, " GM "
+            // faut juste constuire la table a partir de splitFieldLower
     {
-        cqlStatement3 += str[i] + "','";
-    }
-                // the last one
-    cqlStatement3 += str[last-1];
-   // System.out.println("CQLSTT" + str[last-1]);
-    cqlStatement3 +=  "');";
 
-   //System.out.println("CQLSTT" + cqlStatement3);
-
-    return cqlStatement3;
-
-}
-
-    // Functions to change Varchar into Float or integer
-    // Mostly for the Info table
-    // TODO a tester sur autre fichier if hastobeAFloat works
-
-    public String createTableInfo (String tableName,ArrayList<String> tabInfo)
-    {
-        // TODO eliminer doublons ?
-        // Attention au 1 , il y avait dp en double debut et fin dans le fichier chrom Y  , why ?
-        // alors que dp n'est present qu'a la fin des fields info dans l'entete
         boolean writtenOnce=false;
+        boolean writtenOnce2=false;
         LinkedList<String> lowerTableInfo=new LinkedList<String>();
 
         for(int k=0;k<tabInfo.size();k++)
             lowerTableInfo.add(tabInfo.get(k).toLowerCase());
 
-        for(int i=0;i<lowerTableInfo.size();i++)
-            System.out.println(" BOUHOU"+lowerTableInfo.get(i));
+        // for(int i=0;i<lowerTableInfo.size();i++)
+        // System.out.println(" BOUHOU"+lowerTableInfo.get(i));
 
-        String cqlstatement = "CREATE TABLE IF NOT EXISTS Gene.";
-                cqlstatement +=tableName+" ("; // create table Info a a partir des lignes d'entete dans le fichier
+        String cqlstatement = "CREATE TABLE IF NOT EXISTS ";
+        cqlstatement+=keySpaceName+".";
+        cqlstatement +=tableName+" ("; // create table Info a a partir des lignes d'entete dans le fichier
+        cqlstatement+="idu int PRIMARY KEY,";
 
         for (int i=0; i < lowerTableInfo.size()-1; i++)
         {
-
             for (int j=0;j<hasToBeFloatTable.size();j++)
             {
-                //System.out.println("***"+lowerTableInfo.get(i)+"OOOO"+hasToBeFloatTable.get(j));
+                //  for (int k=0;k<hasToBeIntTable.size();k++) TODO triple boucle ? iterer sur k pour les Int
 
-                if (lowerTableInfo.get(i).equals(hasToBeFloatTable.get(j)) && !writtenOnce)
-                    // we write it once and we stop
-                    // si il le trouve
-                    // on continue a chercher jusqu'a ce qu'on le trouve ou pas
+                if (lowerTableInfo.get(i).equals(hasToBeFloatTable.get(j)) && !writtenOnce) // les champs float n'ont pas de guillemets
+                // we write it once and we stop          si il le trouve     on continue a chercher jusqu'a ce qu'on le trouve ou pas
                 {
-                    Float f = Float.parseFloat(lowerTableInfo.get(i));
-                    Float f1 = Float.valueOf(lowerTableInfo.get(i));
-                    System.out.println("It's there " + lowerTableInfo.get(i) + "     " + hasToBeFloatTable.get(j));
-                   // cqlstatement += lowerTableInfo.get(i)+ " float,";
-                    cqlstatement += f+ " float,";
+                    // System.out.println("It's there " + lowerTableInfo.get(i) + "     " + hasToBeFloatTable.get(j));
+                    cqlstatement += lowerTableInfo.get(i)+ " float,";
                     writtenOnce=true;
 
                 }
@@ -155,17 +146,46 @@ public String InsertIntoDataC (String []str)
                 else if (!lowerTableInfo.get(i).equals(hasToBeFloatTable.get(j)) && !writtenOnce && j==hasToBeFloatTable.size()-1) // && boolTableFloatFamily.get(i)==false
                 {
                     writtenOnce = true;
-                    System.out.println("It's not there " + lowerTableInfo.get(i) + "     " + hasToBeFloatTable.get(j));
+                    // System.out.println("It's not there " + lowerTableInfo.get(i) + "     " + hasToBeFloatTable.get(j));
                     cqlstatement += lowerTableInfo.get(i) + " varchar,";
                 }
+
+          /*     if (lowerTableInfo.get(i).equals(hasToBeIntTable.get(k)) && !writtenOnce) // les champs int n'ont pas de guillemets
+                {
+                    cqlstatement += lowerTableInfo.get(i)+ " int,";
+                    writtenOnce=true;
+
+                }
+
+                else if (!lowerTableInfo.get(i).equals(hasToBeFloatTable.get(j)) && !lowerTableInfo.get(i).equals(hasToBeIntTable.get(k))
+                        && !writtenOnce && j==hasToBeFloatTable.size()-1) // && boolTableFloatFamily.get(i)==false
+                {
+                    writtenOnce = true;
+                    // System.out.println("It's not there " + lowerTableInfo.get(i) + "     " + hasToBeFloatTable.get(j));
+                    cqlstatement += lowerTableInfo.get(i) + " varchar,";
+                } */
             }
 
             writtenOnce=false;
         }
+        // The last one
+        for (int j=0;j<hasToBeFloatTable.size();j++)
+        {
 
-        // last field TODO WHICH ONE IS NAKES A GOOD PRIMARY KEY ?
-        // TODO le dernier aussi peut-etre un float donc a modifier
-        cqlstatement += lowerTableInfo.get(lowerTableInfo.size()-1) + " varchar PRIMARY KEY";
+            if (lowerTableInfo.get(lowerTableInfo.size()-1).equals(hasToBeFloatTable.get(j)) && !writtenOnce2) {
+                writtenOnce2=true;
+                cqlstatement += lowerTableInfo.get(lowerTableInfo.size()-1) + " float";
+            }
+
+
+            else if (!lowerTableInfo.get(lowerTableInfo.size()-1).equals(hasToBeFloatTable.get(j)) && !writtenOnce2 && j==hasToBeFloatTable.size()-1){
+                writtenOnce2=true;
+                cqlstatement += lowerTableInfo.get(lowerTableInfo.size()-1) + " varchar";
+            }
+
+            writtenOnce2=false;
+        }
+
         cqlstatement +="); ";
         //System.out.println(cqlstatement);
         return cqlstatement;
@@ -175,7 +195,8 @@ public String InsertIntoDataC (String []str)
     public String createTableFormat() {
         // qui dit format dit samples  ? les samples doivent aussi etre dans la table
         // semi fix ? on ajoute les samples dynamiquement
-        String cqlStatement5 = "CREATE TABLE FORMAT" // TODO la creer dynamiquement en fonction de ce qu'on lit dans l'entete du fichier
+        String cqlStatement = "CREATE TABLE FORMAT" // TODO la creer dynamiquement en fonction de ce qu'on lit dans l'entete du fichier
+                + "Samples varchar,"
                 + "GT varchar,"
                 + "DP varchar,"
                 + "FT varchar,"
@@ -183,96 +204,300 @@ public String InsertIntoDataC (String []str)
                 + "GQ varchar,"
                 + "HQ varchar"
                 + ";)";
-        return cqlStatement5;
+        return cqlStatement;
 
     }
 
-
-    public String insertIntoInfo (String tableName,LinkedList<String> splitTableField, LinkedList<String> splitTableValue)
+    public String createTableSamples (String []str, LinkedList<String> samples) // the samples are supposed to be the columns
     {
-
-        String cqlStt = " INSERT INTO Gene.";
-        cqlStt +=tableName+" (";
-        // boucle pour iterer sur les champs
-        for ( int k=0;k<splitTableField.size()-1;k++)
+        String cqlStatement="CREATE TABLE IF NOT EXISTS Gene.format2( ";
+        System.out.println(" IL y a " + str.length + "champs");
+        for (int i=9;i<str.length-2;i++)
         {
+            samples.add(str[i]); // aurais=je pu inserer directement sans un tableau intermediaire, maybe too heavy
+            cqlStatement+= str[i];
+            cqlStatement+=" varchar,";
+            //System.out.println(str[i]);
+        }
+        // and the last one
+        cqlStatement+=str[str.length-1];
+        cqlStatement+=" varchar PRIMARY KEY);";
+
+        System.out.println("7th one"+cqlStatement);
+
+        return cqlStatement;
+    }
+
+    // functions to insert into a table
+    public void insertionInTable (String tableName, LinkedList<String> fields, LinkedList<String> values) {
+
+        String cqlStt=" INSERT INTO";
+        cqlStt+= tableName;
+        cqlStt += "VALUES ";
+        // TODO KEEP GOING
+    }
+
+    public String InsertIntoData (String tableName, String []str,int counter,LinkedList<String> data)
+    {
+        boolean writtenOnce=false;
+
+
+        //for (int i=0;i<str.length;i++)
+        // System.out.println(str[i]);
+
+        // System.out.println(hasToBeIntTable);
+
+        int last = str.length; // on ne prend pas tout pour l'instant
+
+
+        String cqlStatement = "INSERT INTO Gene." +
+                tableName +
+                "(idu,chrom,pos,id,ref,qual,filter,alt,info) VALUES (";
+        cqlStatement+=counter+",";
+        for (int i=0; i < 7; i++) // 0 1 2 3 4 5 6  length = 8
+        {
+            for(int j=0;j<hasToBeIntTable.size();j++)
+            {
+                if (data.get(i).equals(hasToBeIntTable.get(j)) && !writtenOnce) // ne pas mettre de guillemets si c'est un int
+                {
+                    writtenOnce=true;
+                    cqlStatement += str[i] + ",";
+                }
+
+                else if (!data.get(i).equals(hasToBeIntTable.get(j)) && !writtenOnce )
+                {
+                    writtenOnce=true;
+                    cqlStatement += "'"+str[i]+"',";
+                }
+            }
+
+            writtenOnce=false;
+
+        }
+        // the last one
+        cqlStatement += "'"+str[7]+"'";
+        // System.out.println("CQLSTT" + str[last-1]);
+        cqlStatement +=  ");";
+
+        //System.out.println("CQLSTT" + cqlStatement3);
+
+        return cqlStatement;
+
+    }
+
+    public String insertIntoInfo (String tableName,LinkedList<String> splitTableField, LinkedList<String> splitTableValue, String keySpaceName, int counter) {
+        // int counter=0;
+
+
+        System.out.println(" Taille de la table " + splitTableField.size()+"    "+splitTableValue);
+
+        boolean writtenOnce = false;
+        boolean writtenOnce2=false;
+        LinkedList<String> splitFieldLower = new LinkedList<String>();
+
+        for (int k = 0; k < splitTableField.size(); k++)
+            splitFieldLower.add(splitTableField.get(k).toLowerCase());
+
+        String cqlStt = "INSERT INTO ";
+        cqlStt+=keySpaceName+".";// FIELDS
+        cqlStt += tableName + " (";
+        // boucle pour iterer sur les champs
+        cqlStt+="idu, ";
+        for (int k = 0; k < splitTableField.size()-1; k++) {
             //cqlStt+="'";
-            cqlStt+= splitTableField.get(k).toLowerCase();
-            cqlStt+= ",";
+            cqlStt += splitTableField.get(k).toLowerCase();
+            cqlStt += ",";
 
         }
         //cqlStt+="'";
-        cqlStt+=splitTableField.getLast().toLowerCase();
+        cqlStt += splitTableField.getLast().toLowerCase();
         //cqlStt+= "'";
 
-        //TODO IS IT SILL USEFUL ?
-        cqlStt+=") VALUES ("; // FORMAT DES VALUES COMPLIQUE A GERER
+        cqlStt += ") VALUES ("; // FORMAT DES VALUES COMPLIQUE A GERER
         // boucle pour iterer sur les valeurs
-        for ( int k=0;k<splitTableValue.size()-1;k++) {
-
-            if (splitTableValue.get(k).indexOf(":") !=-1 ) // contains :
-            { // TODO regler le probleme des deux points
-                System.out.println("That happens again");
-                cqlStt+="'";
-                cqlStt+= splitTableValue.get(k).replace(":","A");
-                cqlStt+= "',";
-                // System.out.println(cqlSttSoFar);
-            }
-
-            else if (splitTableValue.get(k).indexOf(",") !=-1 ) // contains ,
-            { // TODO regler le probleme de la virgule
-                System.out.println("That happens again");
-                cqlStt+="'";
-                cqlStt+= splitTableValue.get(k).replace(",","BB");
-                cqlStt+= "',";
-            }
-
-            else
+        cqlStt+=counter+", ";
+        for (int k = 0; k < splitFieldLower.size()-1; k++)
+        {
+            for (int i = 0; i < hasToBeFloatTable.size(); i++)
             {
-                cqlStt+="'";
-                cqlStt += splitTableValue.get(k);
-                cqlStt += "',";
+                if (splitFieldLower.get(k).equals(hasToBeFloatTable.get(i)) && !writtenOnce) // TODO MOFIDY THE CONDITION
+                {
+                    writtenOnce = true;
+                    cqlStt += splitTableValue.get(k); // it's not a string so I could I add it in the ?
+                    cqlStt+=",";
+
+                }
+
+                /*if (splitFieldLower.get(k).equals(hasToBeIntTable.get(i)) && !writtenOnce) // TODO MOFIDY THE CONDITION
+                {
+                    writtenOnce = true;
+                    cqlStt += splitTableValue.get(k); // it's not a string so I could I add it in the ?
+                    cqlStt+=",";
+
+                }*/
+
+                else if (!splitFieldLower.get(k).equals(hasToBeFloatTable.get(i)) && !writtenOnce && i == hasToBeFloatTable.size()-1)
+                {
+                    writtenOnce = true;
+                    cqlStt += "'";
+                    cqlStt += splitTableValue.get(k);
+                    cqlStt += "',";
+                }
+
             }
+
+            writtenOnce=false;
         }
 
-        if (splitTableValue.getLast().indexOf(",") !=-1 )  // TODO et si le dernier a aussi une virgule ou deux points ?
+        for (int i = 0; i < hasToBeFloatTable.size(); i++)
         {
-            cqlStt+= splitTableValue.getLast().replace(",","BB");
+            if (splitFieldLower.getLast().equals(hasToBeFloatTable.get(i)) && !writtenOnce2 )
+            {
+                writtenOnce2=true;
+                cqlStt += splitTableValue.getLast();
+            }
+
+            else if (!splitFieldLower.getLast().equals(hasToBeFloatTable.get(i)) && !writtenOnce2 && i == hasToBeFloatTable.size()-1 )
+            {
+                writtenOnce2 = true;
+                cqlStt += "'";
+                cqlStt += splitTableValue.getLast();
+                cqlStt += "'";
+            }
+
+            writtenOnce2=false;
         }
 
-        else  if (splitTableValue.getLast().indexOf(":") !=-1 )  // TODO et si le dernier a aussi une virgule ou deux points ?
-        {
-            cqlStt+= splitTableValue.getLast().replace(":","BB");
 
-        }
-
-        else {
-            cqlStt+="'";
-            cqlStt+= splitTableValue.getLast();
-            cqlStt+="'";
-        }
-        cqlStt+="); ";
+        cqlStt += "); ";
         return cqlStt;
+
+    }
+
+    // function to remove a table
+
+    public String removeTable (String keySpaceName, String tableName) {
+
+        String cqlStatement = " drop table" +
+                keySpaceName+
+                "." +
+                tableName+
+                ",";
+
+        return cqlStatement;
     }
 
 
-  /*  public String creationIndex(ArrayList<String> tabInfo)
+    // function to remove all tables
+
+    public String removeAllTables () // list of tables ?
     {
-        // TODO more infos :  to perform queries on fields different from the primary key we need index
-        // for now I create an index for every column/field
-        for (int i=0;i<tabInfo.size();i++)
+        String cqlStatement=" ";
+        return cqlStatement;
+    }
+
+    public String prepare(String tableName, ArrayList<String> tabInfo, String keySpaceName, LinkedList<String> splitTableField) { // Needed for all insert
+
+
+        String cqlStt = "INSERT INTO ";
+        cqlStt+=keySpaceName+".";// FIELDS
+        cqlStt += tableName + " (";
+        // boucle pour iterer sur les champs
+        cqlStt+="idu, ";
+        for (int k = 0; k <splitTableField.size()-1; k++) {
+            //cqlStt+="'";
+            cqlStt += splitTableField.get(k).toLowerCase();
+            cqlStt += ",";
+
+        }
+
+        cqlStt += splitTableField.getLast().toLowerCase();
+
+        cqlStt += ") VALUES (";
+        cqlStt+="?,";
+        for (int k = 0; k <splitTableField.size()-1; k++)
+            cqlStt += "?,";
+        cqlStt+="?)";
+
+        return cqlStt;
+    }
+
+    public String tobeBound (int counter, LinkedList<String> splitTableField,LinkedList<String> splitTableValue, LinkedList<String> hasToBeFloatTable) {
+
+        boolean writtenOnce = false;
+        LinkedList<String> splitFieldLower = new LinkedList<String>();
+
+        for (int k = 0; k < splitTableField.size(); k++)
+            splitFieldLower.add(splitTableField.get(k).toLowerCase());
+
+        String cqlStt =counter+", ";
+
+        for (int k = 0; k < splitFieldLower.size()-1; k++)
         {
-            String cqlStatement4 = " CREATE INDEX IF NOT EXISTS "
+            for (int i = 0; i < hasToBeFloatTable.size(); i++)
+            {
+                if (splitFieldLower.get(k).equals(hasToBeFloatTable.get(i)) && !writtenOnce) // TODO MOFIDY THE CONDITION
+                {
+                    writtenOnce = true;
+                    cqlStt += splitTableValue.get(k); // it's not a string so I could I add it in the ?
+                    cqlStt+=",";
+
+                } else if (!splitFieldLower.get(k).equals(hasToBeFloatTable.get(i)) && !writtenOnce && i == hasToBeFloatTable.size()-1)
+                {
+                    writtenOnce = true;
+                    cqlStt += "'";
+                    cqlStt += splitTableValue.get(k);
+                    cqlStt += "',";
+                }
+
+            }
+
+            writtenOnce=false;
+        }
+
+        cqlStt += "'";
+        cqlStt += splitTableValue.getLast();
+        cqlStt += "'";
+
+        cqlStt += "); ";
+        return cqlStt;
+    }
+
+    public String InsertIntoFormat (LinkedList<String> samples)
+    {
+        String cqlStatement=" INSERT INFO Gene.format VALUES( ";
+
+        //for(int i=0;i<samples.size();i++)
+
+            return cqlStatement;
+    }
+
+    // Function to insert into the Info Table
+    // TODO deal with and the equal is not there HYPER IMPORTANT
+
+
+
+    // To perform queries on fields other than the primary key we need to index them
+
+    public String createIndex(int i,ArrayList<String> tabInfo,String tableName)
+    {
+       ArrayList<String> indexList = new ArrayList<String>();
+
+        // for now I create an index for every column/field     as much indexes as columns
+        // why is end double ?
+
+        String cqlStatement= " CREATE INDEX IF NOT EXISTS "
                     + tabInfo.get(i).toLowerCase() // indexname
-                    + "a ON Gene.InfoB"
+                    + "Index ON Gene."
+                    +tableName
                     +"("
                     +tabInfo.get(i).toLowerCase()
                     +");";
-            System.out.println(cqlStatement4);
-        }
 
-        return cql
-    }*/
+             System.out.println(cqlStatement);
+
+        return cqlStatement;
+    }
 
     // TODO to improve
     // https://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Session.prepare

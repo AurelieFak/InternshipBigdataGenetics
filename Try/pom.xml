@@ -68,7 +68,7 @@
             <!--</version>-->
         <!--</dependency>-->
 
-        <!--Spark Cassandra Connector-->
+        <!--SparkT Cassandra Connector-->
 
         <!--<dependency>-->
             <!--<groupId>com.datastax.spark</groupId>-->

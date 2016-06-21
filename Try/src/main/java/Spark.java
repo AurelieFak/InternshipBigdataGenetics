@@ -1,104 +1,56 @@
-//import com.datastax.spark.connector.CassandraJavaUtil;
-import com.datastax.spark.connector.CassandraRow;
-//import com.datastax.spark.connector.SparkContextJavaFunctions;
-import com.datastax.spark.connector.cql.CassandraConnector;
 import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.rdd.RDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.cassandra.CassandraSQLContext;
-//import static com.datastax.spark.connector.CassandraJavaUtil.javaFunctions;
 
-/**
- * Created by molgenis on 5/27/16.
- */
-public class Spark {
-
-    // reading data from Cassandra into RDD and writing RDD to Cassandra.
-
-     /* Distinction between  :
-    SparkConf
-            JavaSparkContext
-            JavaSQLContext
-            SQL Context
-            CassandraSQLContext
-             Cassandra Connector*/
-
-    /*
-    JavaRDD;
-    CREATE RDD
-    CassandraSQLContext csc = new CassandraSQLContext(sqlContext);
-    */
+import java.io.Serializable;
 
 
-    public static void main(String[] args)
-    {
-        // Create the spark context.
-          SparkConf conf = new SparkConf().setAppName("QueriesGene");
-          JavaSparkContext sc = new JavaSparkContext(conf);
+// Java VM Options: -Xms512m -Xmx1024m
 
-      //JavaSQLContext sqlContext = new JavaSQLContext(sc);
+public class Spark implements Serializable {
 
-        // SQLContext sqlContext = new SQLContext(sc);
-        //
-        // CassandraSQLContext cassandraContext = new CassandraSQLContext(conf);
-         CassandraConnector connector = CassandraConnector.apply(sc.getConf());
+    public Spark() {
+        // just an initialisation of SparkT Context
+        SparkConf conf = new SparkConf()
+                .setAppName("Simple Application") // App name
+                .setMaster("local[*]") // We use a local cluster
+                .set("spark.cassandra.connection.host", "127.0.0.1") // Cassandra host IP
+                .set("spark.cleaner.ttl", "3600");
 
-        // conf.setMaster(args[0]);
-        // conf.set("spark.cassandra.connection.host", args[1]); // args 1 ?
+        JavaSparkContext sc = new JavaSparkContext(conf);
 
+        CassandraSQLContext sqlContext = new CassandraSQLContext(sc.sc());
 
-        // Access to Cassandra
-        // https://www.infoq.com/fr/articles/rdd-spark-datastax
+       // DataFrame df = sqlContext.sql("SELECT * FROM gene.infob");
+         String query = "SELECT * FROM gene.info WHERE aa='G' "; // ancestral allele
+        //String query = "SELECT * FROM gene.info WHERE ac=2 "; // AC allele count in genotypes, for each ALT allele, in the same order as listed
+        // todo je ne peux pas faire d'operations de comparaisons ! range queries have to be done on the clustering key portion of the primary key
 
-       SparkConf conf1 = new SparkConf(true)
-                .setMaster("local")
-                .setAppName("DatastaxTests")
-                .set("spark.executor.memory", "1g")
-                .set("spark.cassandra.connection.host", "localhost")
-                .set("spark.cassandra.connection.native.port", "9142")
-                .set("spark.cassandra.connection.rpc.port", "9171");
-        SparkContext ctx = new SparkContext(conf1);
+        DataFrame df = sqlContext.sql(query);
+        Row[] rows = df.collect();
 
+       // TODO JOIN Tables
+        //TODO , sous quelle forme renvoyer les reponses ? // renvoyer une row ? utiliser le idu pour etabllir une correspondance entre les tables
+        // TODO explorer les operateurs de Spark
 
-        // ----------------------------------------------------------------------------------------
+        System.out.println("We have " + rows.length + " rows that satisfy the query " +query);
 
-     /*   JavaPairRDD<Integer, Data> dataRDD =
-                javaFunctions(sc).cassandraTable("Gene", "dataC").keyBy(new Function< Integer, Data >() {
-                    @Override
-                    public Integer call(Data data) throws Exception {
-                        return data.getId();
-                    }
-
-                });
+        for(Row row : rows) {
+            int id = row.fieldIndex("idu");
+            int idd = row.getInt(id);
+           // String name = row.getString(id);
+            System.out.println("ID " + idd);
+        }
 
 
-        SparkContextJavaFunctions functions = javaFunctions(ctx);
-
-        JavaRDD<CassandraRow> rdd = functions.cassandraTable("Gene", "infoB");
-        rdd.cache();
-        JavaPairRDD test = rdd.groupBy(new Function<CassandraRow, String>() {
-            @Override
-            public Object call(Object o) throws Exception {
-                return null;
-            }
-        }); */
-
-        // https://docs.datastax.com/en/datastax_enterprise/4.6/datastax_enterprise/spark/sparkSqlJava.html
-        // http://www.programcreek.com/java-api-examples/index.php?api=com.datastax.spark.connector.cql.CassandraConnector
-
-
-        //JavaPairRDD<Integer,Data> rdd = functions.cassandraTable("Gene", "infoB").keyBy(new Function<Data, Integer>() {})
-
-
-       // http://blog.zenika.com/2015/02/23/spark-et-cassandra/   GOOD ONE
-
-
-
+        sc.stop();
     }
+
+    public static void main(String[] args) {
+        new Spark();
+    }
+
 
 }
